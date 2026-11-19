@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>AnyPrompt Gantt</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#f7f5f2;--card:#ffffff;--fg:#1f1a17;--mut:#6b625b;--line:#e2dcd5;--grid:#ece7e1;--ac:#0f766e;--done:#15803d;--doneb:#dcfce7;--work:#b45309;--workb:#fef3c7;--wait:#475569;--waitb:#e2e8f0;--ask:#b91c1c;--askb:#fee2e2;--gate:#6d28d9;--now:#dc2626}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0c1214;--card:#121b1e;--fg:#e6efee;--mut:#93a9ac;--line:#293e43;--grid:#1c2a2e;--ac:#45dfcf;--done:#4ade80;--doneb:#14351f;--work:#fbbf24;--workb:#3a2c0a;--wait:#cbd5e1;--waitb:#253038;--ask:#fca5a5;--askb:#3b1414;--gate:#c4b5fd;--now:#f87171;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0c1214;--card:#121b1e;--fg:#e6efee;--mut:#93a9ac;--line:#293e43;--grid:#1c2a2e;--ac:#45dfcf;--done:#4ade80;--doneb:#14351f;--work:#fbbf24;--workb:#3a2c0a;--wait:#cbd5e1;--waitb:#253038;--ask:#fca5a5;--askb:#3b1414;--gate:#c4b5fd;--now:#f87171;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:"Noto Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+h1{font-size:26px;line-height:1.3;margin:0;text-wrap:balance}
+h2{font-size:18px;margin:0}
+.sub{color:var(--mut);font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.kpi b{display:block;font-size:26px;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--mut);font-size:13px}
+.prog{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.pnum{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.pnum b{font-size:34px;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--done)}
+.pnum span{font-size:16px;color:var(--mut)}
+.pbar{display:flex;height:18px;border-radius:9px;overflow:hidden;background:var(--grid)}
+.pbar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mut)}
+.legend i{display:inline-block;width:22px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.gbox{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow-x:auto;min-width:0}
+.g{position:relative;display:grid;grid-template-columns:230px 1fr}
+.hd{position:sticky;top:0}
+.lab{position:sticky;left:0;z-index:2;background:var(--card);border-right:1px solid var(--line);padding:0 10px;display:flex;align-items:center;gap:8px;height:34px;font-size:13px;white-space:nowrap;overflow:hidden}
+.lab b{font-variant-numeric:tabular-nums;flex:none}
+.lab span{overflow:hidden;text-overflow:ellipsis}
+.lab.grp{font-weight:700;font-size:13px;color:var(--ac);background:var(--bg);height:30px}
+.trk{position:relative;height:34px;border-bottom:1px solid var(--grid)}
+.trk.grp{height:30px;background:var(--bg)}
+.trk.axis{height:44px;border-bottom:1px solid var(--line)}
+.lab.axis{height:44px;border-bottom:1px solid var(--line);font-weight:600}
+.tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--grid);font-size:11px;color:var(--mut);padding-left:4px;white-space:nowrap}
+.tick.day{border-left:2px solid var(--line);font-weight:700;color:var(--fg)}
+.dlab{position:absolute;top:22px;font-size:12px;font-weight:700;color:var(--fg);white-space:nowrap}
+.bar{position:absolute;top:8px;height:18px;border-radius:4px;min-width:3px}
+.b-done{background:var(--done)}.b-work{background:repeating-linear-gradient(45deg,var(--work),var(--work) 6px,var(--workb) 6px,var(--workb) 12px);border:1px solid var(--work)}.b-gate{background:var(--gate);top:11px;height:12px}
+.dur{position:absolute;top:7px;font-size:12px;color:var(--mut);white-space:nowrap;padding-left:6px}
+.rv{position:absolute;top:4px;height:26px;width:2px;background:var(--fg);opacity:.75}
+.nowl{position:absolute;top:0;bottom:0;width:2px;background:var(--now);z-index:1;pointer-events:none}
+.pill{font-size:12px;font-weight:600;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.s-done{color:var(--done);background:var(--doneb)}.s-work{color:var(--work);background:var(--workb)}.s-wait{color:var(--wait);background:var(--waitb)}.s-ask{color:var(--ask);background:var(--askb)}.s-later{color:var(--mut);background:var(--grid)}
+.tbox{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:980px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--grid);vertical-align:top}
+th{color:var(--mut);font-weight:600;white-space:nowrap;position:sticky;top:0;background:var(--card)}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.grp td{background:var(--bg);font-weight:700;color:var(--ac)}
+.small{color:var(--mut);font-size:12px}
+footer{color:var(--mut);font-size:13px}
+</style>
+</head>
+<body style="margin:0">
+<div class="wrap">
+  <header>
+    <h1>AnyPrompt แผนภูมิการทำงาน เฟส 1 (รันบน Windows)</h1>
+    <div class="sub" id="asof"></div>
+  </header>
+  <section class="prog" aria-label="ความคืบหน้า">
+    <div class="pnum"><b id="pdone"></b><span id="pleft"></span></div>
+    <div class="pbar" id="pbar" role="img"></div>
+    <div class="legend" id="pleg"></div>
+    <div class="small">คิดจากจำนวนรายการในหน้านี้ ไม่ได้ถ่วงตามขนาดงาน และนับเฉพาะงานของเฟส 1 ที่ระบุแล้วตั้งแต่ 18 พ.ย. งานของเฟสถัดไปไม่นับรวม</div>
+  </section>
+  <section class="kpis" id="kpis"></section>
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <h2>แผนภูมิแกนต์</h2>
+    <div class="legend">
+      <span><i style="background:var(--done)"></i>เสร็จ เข้ากิ่งหลักแล้ว</span>
+      <span><i style="background:repeating-linear-gradient(45deg,var(--work),var(--work) 4px,var(--workb) 4px,var(--workb) 8px)"></i>กำลังทำ</span>
+      <span><i style="background:var(--gate);height:7px"></i>ด่านทดสอบเต็ม</span>
+      <span><i style="background:var(--fg);width:2px;height:14px"></i>ผ่านผู้ตรวจ</span>
+      <span><i style="background:var(--now);width:2px;height:14px"></i>เวลาของข้อมูล</span>
+    </div>
+    <div class="gbox"><div class="g" id="g"></div></div>
+    <div class="small">แถบเริ่มที่เวลาเริ่มงาน และจบที่เวลาที่งานเข้ากิ่งหลัก (dev) หลังกัปตันนับผลเทสต์เอง · เลื่อนซ้ายขวาเพื่อดูเวลา</div>
+  </section>
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <h2>รายละเอียดแต่ละรายการ</h2>
+    <div class="tbox"><table id="t"></table></div>
+  </section>
+  <footer>เวลาเป็นเวลาไทย · เวลาที่มีเครื่องหมาย ~ เป็นเวลาโดยประมาณจากบันทึกของกัปตัน ที่เหลือมาจาก git หรือไฟล์บันทึกเวลาของชิ้นงาน · ครอบคลุมตั้งแต่รอบ 0 (18 พ.ย. 2569) · งานก่อนหน้านั้น (11 ถึง 17 พ.ย.) ยังไม่ได้ใส่ในแผนภูมินี้ · เฟส 1 เน้นให้แอปรันบน Windows ได้ก่อน รุ่นสำหรับ iOS ยังไม่มี · ผลเทสต์คือค่าที่กัปตันนับจาก log เอง ตัวที่ล้ม 1 ตัวบน Mac คือเทสต์ล็อกอินเว็บ (MAC-16) ที่ผ่านบนเครื่องวินโดว์</footer>
+</div>
+<script>
+const NOW='11-19 09:55', ASOF='19 พ.ย. 2569 09:55 น.';
+const S={done:['เสร็จ','s-done'],work:['กำลังทำ','s-work'],wait:['ยังไม่เริ่ม','s-wait'],ask:['รอเจ้าของโครงการตัดสิน','s-ask'],gate:['ด่านผ่าน','s-done'],later:['เฟสถัดไป','s-later']};
+// g=กลุ่ม id n=ชื่อ w=ทำอะไร by=ผู้ทำ a=เริ่ม rv=ผ่านผู้ตรวจ b=เข้ากิ่งหลัก ap=เวลาประมาณ(1) rd=รอบผู้ตรวจ t=ผลที่นับ s=สถานะ note
+const D=[
+{g:'รอบ 0 ฐานราก',id:'E1',n:'ส่งข้อความ Grok แล้วอ่านคำตอบ (หน้าจำลอง)',w:'ตัวขับเว็บ Grok ขั้นส่งหนึ่งครั้งแล้วอ่านแชตต่อ',by:'Claude',a:'11-18 14:34',rv:'11-18 19:52',b:'11-18 23:06',rd:'4 รอบ',t:'วินโดว์ drive-check 140 ผ่าน / 0 ล้ม',s:'done',note:''},
+{g:'รอบ 0 ฐานราก',id:'R0-2',n:'สองธีม โลโก้ ไอคอน',w:'สีมืดกับสว่าง ไอคอน 113 ตัว โลโก้รุ่น 4',by:'GLM แล้ว Claude',a:'11-18 15:41',rv:'11-18 19:58',b:'11-18 23:06',rd:'2 รอบ (แก้ 1)',t:'เทสต์หน้าจอ 1409/1409 · e2e 71',s:'done',note:''},
+{g:'รอบ 0 ฐานราก',id:'R0-3',n:'แผนที่งาน (MAP)',w:'แบ่งงานทั้งแอปเป็นชิ้นพร้อมเจ้าของไฟล์',by:'ที่นั่ง anyprompt (Opus)',a:'11-18 18:00',rv:'11-18 20:00',b:'11-18 20:00',ap:1,rd:'กัปตันตรวจ',t:'เอกสารของทีม',s:'done',note:''},
+{g:'รอบ 0 ฐานราก',id:'R0-1',n:'สัญญา wire ฉบับ 2',w:'รูปข้อมูลระหว่างหน้าจอกับแกน',by:'Claude Sonnet',a:'11-18 18:27',rv:'11-18 20:08',b:'11-18 23:06',rd:'2 รอบ (แก้ 1)',t:'Mac 2212 ผ่าน / 1 ล้ม · วินโดว์ 2234 ผ่าน / 0 ล้ม',s:'done',note:''},
+{g:'รอบ 0 ฐานราก',id:'ด่าน Mac',n:'ด่านเต็มบน Mac รอบ 0',w:'15 ขั้น',by:'ที่นั่ง',a:'11-18 20:09',b:'11-18 21:56',rd:'กัปตันนับ',t:'2212 ผ่าน / 1 ล้ม / 31 ข้าม',s:'gate',note:''},
+{g:'รอบ 0 ฐานราก',id:'ด่านวินโดว์',n:'ด่านเต็มบนวินโดว์ รอบ 0',w:'เทสต์ทั้ง workspace + desktop',by:'ที่นั่ง',a:'11-18 22:05',b:'11-18 23:03',rd:'กัปตันนับ',t:'2234 ผ่าน / 0 ล้ม / 39 ข้าม',s:'gate',note:''},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'D08',n:'เอกสารบันทึกผลรอบ 0',w:'คู่มือทดสอบ ข้อ 36–38',by:'Qwen (โควตาหมด) แล้ว Sonnet',a:'11-18 23:11',rv:'11-18 23:25',b:'11-18 23:26',rd:'2 รอบ (แก้ 1)',t:'เอกสารล้วน',s:'done',note:''},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'B1',n:'หน้าเริ่มสร้างงาน',w:'เลือกค่ายต่อชนิดสื่อ และการ์ดฟังก์ชัน 12 ใบ',by:'Qwen, Kimi (โควตาหมด) แล้ว Sonnet',a:'11-18 23:11',rv:'11-18 23:36',b:'11-18 23:44',rd:'1 รอบ',t:'เทสต์หน้าจอ 1430/1430 · e2e 71',s:'done',note:'Sonnet เริ่ม 23:20'},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'B1b',n:'งานแก้ต่อของหน้าเริ่มสร้างงาน',w:'คำเตือนค่ายที่ใช้ไม่ได้ ป้ายของทดสอบ',by:'Claude Sonnet',a:'11-18 23:41',rv:'11-18 23:52',b:'11-19 00:01',ap:1,rd:'1 รอบ',t:'เทสต์หน้าจอ 1435/1435 · e2e 71',s:'done',note:'มาจากที่กัปตันเห็นในภาพจริง 5 ข้อ'},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'B2',n:'หน้าตั้งค่าเรื่องเล่าหน้าเดียว',w:'ตัวเลือกครบในหน้าเดียว ปุ่ม "สร้างทั้งหมด"',by:'Qwen (โควตาหมด) แล้ว Opus',a:'11-18 23:11',rv:'11-18 23:59',b:'11-19 00:39',rd:'2 รอบ (แก้ข้อระดับสูง 1)',t:'เทสต์หน้าจอ 1473/1473 · e2e 71',s:'done',note:'Opus เริ่ม 23:18 · ปิดชิ้นเมื่อเห็นภาพจริง 00:39'},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'A1',n:'โครงแอปใหม่',w:'เมนูซ้ายจัดกลุ่ม แถบบน ปุ่มสลับธีม ต่อเส้นทางหน้าใหม่',by:'GLM (ชนลิมิต) แล้ว Sonnet',a:'11-18 23:11',rv:'11-19 00:28',b:'11-19 00:39',rd:'3 รอบ (แก้ 2)',t:'เทสต์หน้าจอ 1499/1499 · e2e 80',s:'done',note:'GLM ชนลิมิต 23:53'},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'D1',n:'แกนการตัดสินใจและอนุมัติด่าน',w:'ตอบข้อที่แอปถาม และอนุมัติด่านตรวจ',by:'Claude Sonnet',a:'11-18 23:11',rv:'11-18 23:53',b:'11-19 01:05',rd:'2 รอบ (เติมเทสต์)',t:'host+wire 305 ผ่าน / 1 ล้ม',s:'done',note:'ส่วนแรกเข้ากิ่งหลัก 00:11 ส่วนเติมเทสต์ 01:05'},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'C1',n:'แกนการเลือกค่าย',w:'ทะเบียนค่าย 5 ชนิดสื่อ ค่ายเริ่มต้น รายการฟังก์ชัน',by:'Claude Sonnet',a:'11-18 23:11',rv:'11-19 00:50',b:'11-19 01:05',rd:'2 รอบ (แก้ข้อระดับกลาง 2)',t:'host+wire 305 ผ่าน / 1 ล้ม',s:'done',note:'ผู้ทำรอบแรกใช้ 71 นาที'},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'B2b',n:'ป้ายยังไม่พร้อมบนโหมดที่ยังไม่ทำ',w:'การ์ดสองโหมดเลือกไม่ได้ ปุ่มเริ่มเรื่องใหม่ไปหน้าใหม่',by:'Claude Sonnet',a:'11-19 00:40',rv:'11-19 00:51',b:'11-19 01:29',rd:'1 รอบ',t:'เทสต์หน้าจอ 1503/1503 · e2e 81',s:'done',note:''},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'C1c',n:'เปิดโปรเจกต์ได้เสมอ',w:'แก้ที่เปิดโปรเจกต์ซ้ำไม่ได้ในแอปจริง',by:'Claude Sonnet',a:'11-19 00:52',rv:'11-19 01:13',b:'11-19 01:29',ap:1,rd:'1 รอบ + แก้เทสต์ตอนรวม',t:'host+wire 306 ผ่าน / 1 ล้ม',s:'done',note:''},
+{g:'รอบ 1 ขั้นตอนหลัก',id:'ด่านวินโดว์',n:'ด่านเต็มบนวินโดว์ รอบ 1',w:'เทสต์ทั้ง workspace + desktop',by:'ที่นั่ง',a:'11-19 01:29',b:'11-19 02:29',rd:'กัปตันนับ',t:'2260 ผ่าน / 0 ล้ม / 39 ข้าม',s:'gate',note:''},
+{g:'รอบ 2 ต่อยอด',id:'C2',n:'ชนิดฟังก์ชันบนการ์ดโปรเจกต์',w:'บันทึกชนิดฟังก์ชันลงโปรเจกต์',by:'Claude Sonnet',a:'11-19 02:31',rv:'11-19 02:45',b:'11-19 04:37',ap:1,rd:'1 รอบ',t:'host+wire 308 ผ่าน / 1 ล้ม · studio 793 ผ่าน',s:'done',note:''},
+{g:'รอบ 2 ต่อยอด',id:'C1b',n:'แนวย่อยที่เลือกมาก่อนเรื่องตั้งต้น',w:'ลำดับความสำคัญใหม่ และส่งจำนวนตั้งต้นให้หน้าจอ',by:'Claude Sonnet',a:'11-19 02:31',rv:'11-19 03:00',b:'11-19 04:37',ap:1,rd:'1 รอบ',t:'host+wire 308 ผ่าน / 1 ล้ม',s:'done',note:'ชุดเทสต์ใหญ่ของ studio ใช้ 82 นาที'},
+{g:'รอบ 2 ต่อยอด',id:'ด่านวินโดว์',n:'ด่านเต็มบนวินโดว์ รอบ C2 + C1b',w:'เทสต์ทั้ง workspace + desktop',by:'ที่นั่ง',a:'11-19 04:37',b:'11-19 05:36',rd:'กัปตันนับ',t:'2266 ผ่าน / 0 ล้ม / 39 ข้าม',s:'gate',note:''},
+{g:'รอบ 2 ต่อยอด',id:'UI1',n:'งานหน้าจอตามเก็บ',w:'แถบบนแสดงค่ายครบ ช่องจำนวนตัวละครแก้ได้',by:'GLM (ชนลิมิตใน 30 นาที) แล้ว Sonnet',a:'11-19 05:12',rv:'11-19 05:55',b:'11-19 06:00',rd:'2 รอบ (แก้ 1)',t:'เทสต์หน้าจอ 1529/1529 · e2e 84',s:'done',note:''},
+{g:'รอบ 2 ต่อยอด',id:'D3',n:'ส่งออกเป็น MP4',w:'คำสั่งส่งออก 5 ตัว สร้าง MP4 จริง',by:'Claude Sonnet',a:'11-19 06:00',rv:'11-19 06:50',b:'11-19 09:37',ap:1,rd:'1 รอบ',t:'host+wire 322 ผ่าน / 1 ล้ม',s:'done',note:'รอรวมพร้อมชิ้นอื่น จึงเข้ากิ่งหลักช้า'},
+{g:'รอบ 2 ต่อยอด',id:'C1c2',n:'ความสามารถของค่ายแบบสด',w:'เมื่อความสามารถของค่ายเปลี่ยน หยุดก่อนรันและบอกผู้ใช้',by:'Claude Sonnet',a:'11-19 06:00',ap:1,rd:'ตีกลับ 2 รอบ กำลังแก้รอบสาม',t:'',s:'work',note:''},
+{g:'รอบ 2 ต่อยอด',id:'FLAKE',n:'แก้เทสต์ที่ล้มแบบสุ่ม 2 ตัว',w:'ให้เทสต์รอเหตุการณ์จริงแทนการหน่วงเวลา',by:'Claude Sonnet',a:'11-19 09:01',rv:'11-19 09:21',b:'11-19 09:37',ap:1,rd:'1 รอบ + รัน 10 รอบ',t:'ผ่านในรอบชุดเต็ม',s:'done',note:''},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-0',n:'ตรวจการเรียกใช้งานปัจจุบันของค่าย',w:'เอกสารทางการของ 5 ค่าย และ Grok กับ Meta',by:'ผู้ค้นคว้า Sonnet + กัปตัน',a:'11-19 07:49',b:'11-19 07:57',rd:'กัปตันตรวจเอง',t:'OpenRouter 480 โมเดล ฟรี 14 ตัว',s:'done',note:''},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-D',n:'หน้าออกแบบ 01 ส่วนบทและข้อความ',w:'แยกกลุ่ม ผ่านหน้าเว็บ กับ ผ่าน API key',by:'กัปตัน (Fable)',a:'11-19 08:03',b:'11-19 08:29',rd:'เจ้าของโครงการสั่งแก้ 4 ครั้ง',t:'หน้าออกแบบรุ่น 36',s:'done',note:''},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-a',n:'สัญญาและเอกสาร',w:'ช่องเลือกโมเดล คำสั่งดึงรายชื่อโมเดล',by:'Claude Sonnet',a:'11-19 07:59',rv:'11-19 08:37',b:'11-19 09:37',rd:'2 รอบ (แก้ 1)',t:'host+wire 322 ผ่าน / 1 ล้ม',s:'done',note:''},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-b',n:'ตัวขับมาตรฐาน 4 ค่าย',w:'OpenAI z.ai MiniMax OpenRouter',by:'Claude Sonnet',a:'11-19 08:38',ap:1,rd:'รอบแรกให้แก้ (ข้อระดับสูง 1)',t:'',s:'work',note:'ผู้ตรวจพบการลองซ้ำที่อาจคิดเงิน 3 ครั้ง กำลังแก้'},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-c',n:'ตัวขับ Gemini และรายการโมเดล',w:'เขียนบทผ่าน Gemini รายการโมเดลพร้อมป้าย',by:'Claude Sonnet',a:'11-19 09:20',ap:1,rd:'',t:'',s:'work',note:''},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-d',n:'ส่วนเชื่อมแกน',w:'ทะเบียนค่าย ทดสอบคีย์ ราคาต่อโมเดล ลิมิตค่าใช้จ่าย',by:'Claude Sonnet',rd:'',t:'',s:'wait',note:'รอ b กับ c'},
+{g:'ค่ายบทแบบ API key (W12)',id:'W12-e',n:'หน้าจอ',w:'กลุ่มหน้าเว็บกับ API key หน้าต่างเตือน หน้าตั้งค่าคีย์',by:'Claude Sonnet',rd:'',t:'',s:'wait',note:'รอ d'},
+{g:'ยังไม่เริ่ม',id:'G1a',n:'ด่านใหญ่ หน้าใหม่ถึง MP4',w:'ทดสอบทั้งเส้นทางบนวินโดว์ด้วยข้อมูลจำลอง',by:'',rd:'',t:'',s:'wait',note:''},
+{g:'ยังไม่เริ่ม',id:'D2',n:'แก้ฉาก',w:'แก้ฉาก เลือกเทค เปลี่ยนค่ายของโปรเจกต์',by:'',rd:'',t:'',s:'wait',note:'ต้องเสร็จก่อนตัวขับจริงตัวแรก'},
+{g:'ยังไม่เริ่ม',id:'C3',n:'สถานะโปรเจกต์และประมาณการ',w:'สถานะ เปิดโฟลเดอร์ บันทึกสำเนา',by:'',rd:'',t:'',s:'wait',note:''},
+{g:'ยังไม่เริ่ม',id:'D4',n:'สื่อเสริม',w:'คลื่นเสียง เตรียมสื่อ เปิดลิงก์',by:'',rd:'',t:'',s:'wait',note:''},
+{g:'ยังไม่เริ่ม',id:'D08-R1',n:'เอกสารบันทึกผลรอบ 1',w:'คู่มือทดสอบของงานรอบ 1',by:'GLM',rd:'',t:'',s:'wait',note:''},
+{g:'รอเจ้าของโครงการตัดสิน',id:'E2/E3',n:'เลนเว็บจริงของ Grok',w:'พิสูจน์กับหน้าจริง แล้วทำภาพ',by:'Claude',rd:'',t:'',s:'ask',note:'รออนุญาตเปิดเลนเว็บจริง'},
+{g:'รอเจ้าของโครงการตัดสิน',id:'VOICE',n:'แหล่งเสียงบรรยายไทย',w:'เสียงยังเป็นของจำลอง แอปจริงจึงรันจนจบไม่ได้',by:'',rd:'',t:'',s:'ask',note:''},
+{g:'รอเจ้าของโครงการตัดสิน',id:'PACK',n:'เนื้อหาระดับแนวย่อยในชุดเรื่อง',w:'ให้แนวย่อยที่เลือกมีผลต่อเรื่องจริง',by:'',rd:'',t:'',s:'ask',note:''},
+{g:'เฟสถัดไป (ไม่นับในเปอร์เซ็นต์ของเฟส 1)',id:'iOS',n:'รุ่นสำหรับรันบน iOS',w:'ยังไม่มีในแผนเฟส 1 ซึ่งเน้นให้รันบน Windows ได้ก่อน',by:'',rd:'',t:'',s:'later',note:'ยังไม่ได้วางแผนรายละเอียด'}
+];
+const T0='11-18 14:00', PXH=64;
+const mins=s=>{const [d,t]=s.split(' '),[mo,da]=d.split('-').map(Number),[h,m]=t.split(':').map(Number);return (da-18)*1440+h*60+m};
+const x=s=>(mins(s)-mins(T0))/60*PXH;
+const th=s=>{const [d,t]=s.split(' ');return d.split('-')[1]+' พ.ย. '+t};
+const dur=(a,b)=>{const m=mins(b)-mins(a);return (m>=60?Math.floor(m/60)+' ชม. ':'')+(m%60)+' นาที'};
+const el=(t,c,v)=>{const e=document.createElement(t);if(c)e.className=c;if(v!=null)e.textContent=v;return e};
+document.getElementById('asof').textContent='ข้อมูล ณ '+ASOF+' · งานตั้งแต่ 18 พ.ย. 2569';
+const work=D.filter(d=>d.s!=='gate'&&d.s!=='later');
+const cnt=k=>work.filter(d=>d.s===k).length;
+const doneM=work.filter(d=>d.s==='done').map(d=>mins(d.b)-mins(d.a));
+const pc=k=>Math.round(cnt(k)/work.length*100);
+document.getElementById('pdone').textContent='เสร็จ '+pc('done')+'%';
+document.getElementById('pleft').textContent='เหลือ '+(100-pc('done'))+'% · เสร็จ '+cnt('done')+' จาก '+work.length+' รายการ เหลือ '+(work.length-cnt('done'))+' รายการ';
+const pb=document.getElementById('pbar'),pl=document.getElementById('pleg');
+pb.setAttribute('aria-label','เสร็จ '+pc('done')+' เปอร์เซ็นต์');
+[['done','เสร็จ เข้ากิ่งหลักแล้ว','var(--done)'],['work','กำลังทำ','var(--work)'],['wait','ยังไม่เริ่ม','var(--wait)'],['ask','รอเจ้าของโครงการตัดสิน','var(--ask)']].forEach(([k,l,c])=>{const i=document.createElement('i');i.style.width=(cnt(k)/work.length*100)+'%';i.style.background=c;i.title=l+' '+cnt(k);pb.append(i);const sp=el('span');const sw=document.createElement('i');sw.style.background=c;sp.append(sw,document.createTextNode(l+' '+cnt(k)+' รายการ ('+Math.round(cnt(k)/work.length*100)+'%)'));pl.append(sp)});
+const kp=document.getElementById('kpis');
+[['รายการงานทั้งหมด',work.length],['เสร็จ เข้ากิ่งหลักแล้ว',cnt('done')],['กำลังทำ',cnt('work')],['ยังไม่เริ่ม',cnt('wait')],['รอเจ้าของโครงการตัดสิน',cnt('ask')],['ด่านทดสอบเต็มที่ผ่าน',D.filter(d=>d.s==='gate').length]].forEach(([l,n])=>{const k=el('div','kpi');k.append(el('b',null,n),el('span',null,l));kp.append(k)});
+// gantt
+const g=document.getElementById('g'),W=x(NOW)+140;
+const row=(lab,trk)=>{g.append(lab,trk)};
+const axisL=el('div','lab axis','รายการ'),axisT=el('div','trk axis');axisT.style.width=W+'px';
+for(let m=mins(T0);m<=mins(NOW)+60;m+=60){const h=((m%1440)+1440)%1440/60,t=el('div','tick'+(h===0?' day':''),String(h).padStart(2,'0')+':00');t.style.left=((m-mins(T0))/60*PXH)+'px';axisT.append(t);if(h===0||m===mins(T0)){const dl=el('div','dlab',h===0?'19 พ.ย.':'18 พ.ย.');dl.style.left=((m-mins(T0))/60*PXH+4)+'px';axisT.append(dl)}}
+row(axisL,axisT);
+let cur='';
+D.forEach(d=>{
+  if(d.g!==cur){cur=d.g;const l=el('div','lab grp',cur),t=el('div','trk grp');t.style.width=W+'px';row(l,t)}
+  const l=el('div','lab');l.append(el('b',null,d.id),el('span',null,d.n));l.title=d.id+' '+d.n;
+  const t=el('div','trk');t.style.width=W+'px';
+  for(let m=mins(T0);m<=mins(NOW)+60;m+=60){const k=el('div','tick');k.style.left=((m-mins(T0))/60*PXH)+'px';t.append(k)}
+  if(d.a){const end=d.b||NOW,b=el('div','bar '+(d.s==='gate'?'b-gate':d.s==='work'?'b-work':'b-done'));b.style.left=x(d.a)+'px';b.style.width=Math.max(3,x(end)-x(d.a))+'px';b.title=th(d.a)+' ถึง '+(d.b?th(d.b):'ตอนนี้')+' ('+dur(d.a,end)+')';t.append(b);
+    if(d.rv){const r=el('div','rv');r.style.left=x(d.rv)+'px';r.title='ผ่านผู้ตรวจ '+th(d.rv);t.append(r)}
+    const u=el('div','dur',(d.ap?'~':'')+dur(d.a,end)+(d.b?'':' และยังทำอยู่'));u.style.left=x(end)+'px';t.append(u)}
+  row(l,t)});
+const nl=el('div','nowl');nl.style.left=(230+x(NOW))+'px';g.append(nl);
+// table
+const tb=document.getElementById('t');
+const hr=el('tr');['รหัส','รายการ','ผู้ทำ','เริ่ม','ผ่านผู้ตรวจ','เข้ากิ่งหลัก','ระยะเวลา','รอบผู้ตรวจ','ผลที่กัปตันนับ','สถานะ'].forEach(h=>hr.append(el('th',null,h)));tb.append(hr);
+cur='';
+D.forEach(d=>{
+  if(d.g!==cur){cur=d.g;const r=el('tr','grp'),c=el('td',null,cur);c.colSpan=10;r.append(c);tb.append(r)}
+  const r=el('tr'),name=el('td');name.append(el('div',null,d.n),el('div','small',d.w+(d.note?' · '+d.note:'')));
+  const st=el('td'),p=el('span','pill '+S[d.s][1],S[d.s][0]);st.append(p);
+  r.append(el('td','n',d.id),name,el('td',null,d.by||'-'),el('td','n',d.a?(d.ap?'~':'')+th(d.a):'-'),el('td','n',d.rv?th(d.rv):'-'),el('td','n',d.b?th(d.b):'-'),el('td','n',d.a?(d.ap?'~':'')+dur(d.a,d.b||NOW)+(d.b?'':' (ยังทำอยู่)'):'-'),el('td',null,d.rd||'-'),el('td',null,d.t||'-'),st);
+  tb.append(r)});
+</script>
+
+</body>
+</html>
